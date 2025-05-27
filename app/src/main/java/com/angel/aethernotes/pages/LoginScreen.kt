@@ -24,7 +24,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.angel.aethernotes.navigation.SIGNUP_URL
 import com.angel.aethernotes.ui.theme.AetherNotesTheme
+import com.angel.aethernotes.viewmodels.AuthViewModel
 
 @Composable
 fun LoginScreen(navController: NavHostController){
