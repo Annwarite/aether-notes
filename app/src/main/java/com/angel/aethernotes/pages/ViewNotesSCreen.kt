@@ -1,15 +1,24 @@
 package com.angel.aethernotes.pages
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
@@ -32,44 +41,43 @@ import com.angel.aethernotes.ui.theme.AetherNotesTheme
 import com.angel.aethernotes.viewmodels.NotesViewModel
 
 @Composable
-fun ViewNotesScreen(navController:NavHostController) {
-    Column(modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally) {
+fun ViewNotesScreen(navController: NavHostController) {
+    val context = LocalContext.current
+    val notesRepository = NotesViewModel(navController, context)
 
-        var context = LocalContext.current
-        var notesRepository = NotesViewModel(navController, context)
+    val emptyNotesState = remember { mutableStateOf(Notes("", "", "", "", "")) }
+    val emptyNotesListState = remember { mutableStateListOf<Notes>() }
 
+    val notesList = notesRepository.allNotes(emptyNotesState, emptyNotesListState)
 
-        val emptyNotesState = remember { mutableStateOf(Notes("","","","","")) }
-        var emptyNotesListState = remember { mutableStateListOf<Notes>() }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "All Notes",
+            fontSize = 30.sp,
+            fontFamily = FontFamily.Cursive,
+            color = Color.Red
+        )
 
-        var products = notesRepository.allNotes(emptyNotesState, emptyNotesListState)
+        Spacer(modifier = Modifier.height(20.dp))
 
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = "All notes",
-                fontSize = 30.sp,
-                fontFamily = FontFamily.Cursive,
-                color = Color.Red)
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            LazyColumn(){
-                items(products){
-                    NotesItem(
-                        subject = it.subject,
-                        topic = it.topic,
-                        subTopic = it.subject,
-                        id = it.id,
-                        navController = navController,
-                        notesRepository = notesRepository,
-                        notesFile = it.notesFile
-                    )
-                }
+        LazyColumn {
+            items(notesList) { note ->
+                NotesItem(
+                    subject = note.subject,
+                    topic = note.topic,
+                    subTopic = note.subTopic,
+                    id = note.id,
+                    navController = navController,
+                    notesRepository = notesRepository,
+                    notesFile = note.notesFile,
+                    context = context
+                )
+                Divider(thickness = 1.dp, color = Color.Gray, modifier = Modifier.padding(vertical = 8.dp))
             }
         }
     }
@@ -77,31 +85,64 @@ fun ViewNotesScreen(navController:NavHostController) {
 
 
 @Composable
-fun NotesItem(subject:String, topic:String, subTopic:String, id:String,
-                navController:NavHostController,
-                notesRepository:NotesViewModel, notesFile:String) {
+fun NotesItem(
+    subject: String,
+    topic: String,
+    subTopic: String,
+    id: String,
+    navController: NavHostController,
+    notesRepository: NotesViewModel,
+    notesFile: String,
+    context: Context
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp)
+    ) {
+        Text(text = "Subject: $subject", fontWeight = FontWeight.Bold)
+        Text(text = "Topic: $topic")
+        Text(text = "Sub-topic: $subTopic")
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(text = subject)
-        Text(text = topic)
-        Text(text = subTopic)
-        Image(
-            painter = rememberAsyncImagePainter(notesFile),
-            contentDescription = null,
-            modifier = Modifier.size(250.dp)
-        )
-        Button(onClick = {
-            notesRepository.deleteNotes(id)
-        }) {
-            Text(text = "Delete")
-        }
-        Button(onClick = {
-            //navController.navigate(ROUTE_UPDATE_PRODUCTS+"/$id")
-        }) {
-            Text(text = "Update")
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(onClick = {
+                openPdf(context, notesFile)
+            }) {
+                Text(text = "View PDF")
+            }
+
+            Button(onClick = {
+                notesRepository.deleteNotes(id)
+            }) {
+                Text(text = "Delete")
+            }
+
+            Button(onClick = {
+                // Uncomment and update your navigation logic here
+                // navController.navigate("update_note_screen/$id")
+            }) {
+                Text(text = "Update")
+            }
         }
     }
 }
+
+fun openPdf(context: Context, pdfUrl: String) {
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(Uri.parse(pdfUrl), "application/pdf")
+        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_GRANT_READ_URI_PERMISSION
+    }
+
+    try {
+        context.startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        Toast.makeText(context, "No PDF viewer found", Toast.LENGTH_SHORT).show()
+    }
+}
+
+
 
 @Composable
 @Preview(showBackground = true)

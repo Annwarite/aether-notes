@@ -3,6 +3,7 @@ package com.angel.aethernotes.pages
 import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -38,7 +39,7 @@ import com.angel.aethernotes.ui.theme.AetherNotesTheme
 import com.angel.aethernotes.viewmodels.NotesViewModel
 
 @Composable
-fun AddNotesScreen(navController:NavHostController){
+fun AddNotesScreen(navController: NavHostController) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -84,72 +85,79 @@ fun AddNotesScreen(navController:NavHostController){
 
         Spacer(modifier = Modifier.height(20.dp))
 
-
-
-        //---------------------IMAGE PICKER START-----------------------------------//
-
-        var modifier = Modifier
-        ImagePicker(modifier,context, navController, notesSubject.trim(), topic.trim(), subTopic.trim())
-
-        //---------------------IMAGE PICKER END-----------------------------------//
-
-
-
+        //---------------------PDF PICKER START-----------------------------------//
+        val modifier = Modifier
+        FilePicker(
+            modifier = modifier,
+            context = context,
+            navController = navController,
+            subject = notesSubject.trim(),
+            topic = topic.trim(),
+            subTopic = subTopic.trim()
+        )
+        //---------------------PDF PICKER END-----------------------------------//
     }
 }
 
 @Composable
-fun ImagePicker(modifier: Modifier = Modifier, context: Context,navController: NavHostController, subject:String, topic:String, subTopic:String) {
-    var hasImage by remember { mutableStateOf(false) }
+fun FilePicker(
+    modifier: Modifier = Modifier,
+    context: Context,
+    navController: NavHostController,
+    subject: String,
+    topic: String,
+    subTopic: String
+) {
+    var hasFile by remember { mutableStateOf(false) }
     var notesFileUri by remember { mutableStateOf<Uri?>(null) }
 
-    val imagePicker = rememberLauncherForActivityResult(
+    val filePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
-            hasImage = uri != null
+            hasFile = uri != null
             notesFileUri = uri
         }
     )
 
-    Column(modifier = modifier,) {
-        if (hasImage && notesFileUri != null) {
-            val bitmap = MediaStore.Images.Media.
-            getBitmap(context.contentResolver,notesFileUri)
-            Image(bitmap = bitmap.asImageBitmap(), contentDescription = "Selected notes")
+    Column(modifier = modifier) {
+        if (hasFile && notesFileUri != null) {
+            val fileName = notesFileUri?.lastPathSegment ?: "Selected PDF"
+            Text(
+                text = "Selected: $fileName",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(8.dp)
+            )
         }
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 32.dp), horizontalAlignment = Alignment.CenterHorizontally,) {
+                .padding(bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Button(
                 onClick = {
-                    imagePicker.launch("image/*")
+                    filePicker.launch("application/pdf")
                 },
             ) {
-                Text(
-                    text = "Select Notes"
-                )
+                Text(text = "Select PDF Notes")
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Button(onClick = {
-                //-----------WRITE THE UPLOAD LOGIC HERE---------------//
-                var productRepository = NotesViewModel(navController,context)
-                productRepository.uploadNotes(subject, topic, subTopic,notesFileUri!!)
-
-
-            }) {
+            Button(
+                onClick = {
+                    if (notesFileUri != null) {
+                        val productRepository = NotesViewModel(navController, context)
+                        productRepository.uploadNotes(subject, topic, subTopic, notesFileUri!!)
+                    } else {
+                        Toast.makeText(context, "Please select a file first", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            ) {
                 Text(text = "Upload")
             }
         }
-    }
-}
-
-@Composable
-@Preview(showBackground = true)
-fun AddProductsScreenPreview(){
-    AetherNotesTheme {
-        AddNotesScreen(navController = rememberNavController())
     }
 }

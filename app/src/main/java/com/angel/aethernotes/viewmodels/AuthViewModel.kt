@@ -48,7 +48,7 @@ class AuthViewModel(var navController:NavHostController, var context:Context) {
                 Toast.makeText(this.context, "Success", Toast.LENGTH_SHORT).show()
                 navController.navigate(HOME_URL)
             }else{
-                Toast.makeText(this.context, "Error", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this.context, it.exception!!.message, Toast.LENGTH_SHORT).show()
             }
         }
     }

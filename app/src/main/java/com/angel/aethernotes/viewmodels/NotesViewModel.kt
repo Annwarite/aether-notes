@@ -28,57 +28,72 @@ class NotesViewModel(var navController:NavHostController, var context: Context) 
         progress.setMessage("Please wait...")
     }
 
-    fun uploadNotes(subject:String, topic:String, subTopic:String, filePath:Uri){
+    fun uploadNotes(subject: String, topic: String, subTopic: String, filePath: Uri) {
         val notesId = System.currentTimeMillis().toString()
-        val storageRef = FirebaseStorage.getInstance().getReference()
-            .child("Notes/$notesId")
+        val storageRef = FirebaseStorage.getInstance().getReference("Notes/$notesId.pdf")
+
+        val contentResolver = context.contentResolver
+        val mimeType = contentResolver.getType(filePath)
+
+        if (mimeType != "application/pdf") {
+            Toast.makeText(context, "Only PDF files are supported", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         progress.show()
-        storageRef.putFile(filePath).addOnCompleteListener{
+
+        storageRef.putFile(filePath).addOnCompleteListener {
             progress.dismiss()
-            if (it.isSuccessful){
-                // Save data to db
-                storageRef.downloadUrl.addOnSuccessListener {
-                    var notesFileUrl = it.toString()
-                    var note = Notes(subject,topic,subTopic,notesFileUrl,notesId)
-                    var databaseRef = FirebaseDatabase.getInstance().getReference()
-                        .child("Notes/$notesId")
-                    databaseRef.setValue(note).addOnCompleteListener {
-                        if (it.isSuccessful){
-                            Toast.makeText(this.context, "Success", Toast.LENGTH_SHORT).show()
-                        }else{
-                            Toast.makeText(this.context, "Error", Toast.LENGTH_SHORT).show()
+            if (it.isSuccessful) {
+                storageRef.downloadUrl.addOnSuccessListener { uri ->
+                    val notesFileUrl = uri.toString()
+                    val note = Notes(subject, topic, subTopic, notesFileUrl, notesId)
+
+                    val databaseRef = FirebaseDatabase.getInstance().getReference("Notes/$notesId")
+                    databaseRef.setValue(note).addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            Toast.makeText(context, "Note uploaded successfully", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Failed to save note info", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
-            }else{
-                Toast.makeText(this.context, "Upload error", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "PDF upload failed", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+
     fun allNotes(
-        note:MutableState<Notes>,
-        notes:SnapshotStateList<Notes>):SnapshotStateList<Notes>{
+        note: MutableState<Notes>,
+        notes: SnapshotStateList<Notes>
+    ): SnapshotStateList<Notes> {
         progress.show()
-        var ref = FirebaseDatabase.getInstance().getReference()
-            .child("Notes")
-        ref.addValueEventListener(object: ValueEventListener{
+
+        val ref = FirebaseDatabase.getInstance().getReference("Notes")
+        ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 notes.clear()
-                for (snap in snapshot.children){
-                    var retrievedNotes = snap.getValue(Notes::class.java)
-                    note.value = retrievedNotes!!
-                    notes.add(retrievedNotes)
+                for (snap in snapshot.children) {
+                    val retrievedNotes = snap.getValue(Notes::class.java)
+                    if (retrievedNotes != null) {
+                        note.value = retrievedNotes
+                        notes.add(retrievedNotes)
+                    }
                 }
                 progress.dismiss()
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(context, "DB locked", Toast.LENGTH_SHORT).show()
+                progress.dismiss()
+                Toast.makeText(context, "Failed to retrieve notes", Toast.LENGTH_SHORT).show()
             }
         })
+
         return notes
     }
+
 
     fun deleteNotes(notesId:String){
         var ref = FirebaseDatabase.getInstance().getReference()
