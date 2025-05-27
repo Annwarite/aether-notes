@@ -6,9 +6,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.angel.aethernotes.pages.AddNotesScreen
 import com.angel.aethernotes.pages.HomeScreen
 import com.angel.aethernotes.pages.LoginScreen
 import com.angel.aethernotes.pages.SignUpScreen
+import com.angel.aethernotes.pages.ViewNotesScreen
 
 @Composable
 fun AppNavHost(
@@ -30,10 +32,10 @@ fun AppNavHost(
             HomeScreen(navController = navController)
         }
         composable(ADD_NOTES_URL){
-            AddProductsScreen(navController = navController)
+            AddNotesScreen(navController = navController)
         }
         composable(VIEW_NOTES_URL){
-            ViewProductsScreen(navController = navController)
+            ViewNotesScreen(navController = navController)
         }
     }
 }
