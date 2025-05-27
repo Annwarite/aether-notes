@@ -5,6 +5,8 @@ import android.content.Context
 import android.widget.Toast
 import androidx.navigation.NavHostController
 import com.angel.aethernotes.models.User
+import com.angel.aethernotes.navigation.HOME_URL
+import com.angel.aethernotes.navigation.LOGIN_URL
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 
